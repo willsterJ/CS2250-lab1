@@ -5,8 +5,13 @@
 
 using namespace std;
 
+#define MAX_DEF 16
+#define MAX_SYMBOL 256
+
+
 bool ERROR = false;
 int ModuleIndex = 0;
+int symbolIndex = 0;
 int globalOffset = 0;
 
 typedef struct Modules{
@@ -15,9 +20,9 @@ typedef struct Modules{
 	int * symbolValList;
 
 } ModuleS;
-struct Modules *ModuleList; 
-// declare Module to be initialized in main()
-
+struct Modules *ModuleList; // declare Module to be initialized in main()
+char **symbol;	// create  list to store symbols. ** for pointer to array of char (i.e.) string
+int *symValue;	// initilize dynamic array of symbol values
 
 
 
@@ -26,7 +31,8 @@ void firstPass(ifstream& infile) {
 	int lineNumber = 0; // ERROR, track line number for error reporting
 
 	int TEST = 1;
-	while (!infile.eof()) {
+	while (!infile.eof() && TEST <= 5) {
+		
 		string line1, line2, line3;
 		getline(infile, line1);	// store first line into line1 => definition list
 		getline(infile, line2); // use list
@@ -35,8 +41,9 @@ void firstPass(ifstream& infile) {
 
 		ModuleList[ModuleIndex].offset = globalOffset;	// set module offset to current global offset
 
+	
 		/*--------------------HANDLE DEFINITIONS------------------------*/
-
+		
 		// convert string to C-string to make strcpy work
 		char *xline = new char[line1.length() + 1];
 		strcpy(xline, line1.c_str());
@@ -49,70 +56,46 @@ void firstPass(ifstream& infile) {
 		int defcount = atoi(token);	// convert first token to definition count
 
 		token = strtok (NULL, " ");
-
-		char **symbol;	// create temporary list to store symbols. ** for pointer to array of char (i.e.) string
-		symbol = (char **)malloc(sizeof(char*)*defcount);
-		int k;
 		
+		//printf ("token: %s ",token);
 		
-		for (k=0; k<defcount; k++){		// initilize c-string memory malloc for each symbol element
-			symbol[k] = (char *)malloc(sizeof(char)*10);
-		}
-		
-		
-		int *symValue;	// initilize dynamic array of symbol values
-		symValue = (int *)malloc(sizeof(int)*defcount);
-		
-		int i = 0;
-		int j = 0;
+		int localdefcount=0;
 		while (token != NULL){
-			//printf ("%s ",token);
+			printf (" inloop: %s ",token);
 			char *tokencpy;
-
 			tokencpy = strdup(token); // make a copy of the string
-			//strcat(tokencpy, "\0");
-			
-			symbol[i++] = tokencpy;	// add to symbol list
-			
-			printf("%s ",symbol[i-1]);
-			//cout << "strlen: "<< strlen(symbol[i-1]);
+			symbol[symbolIndex] = tokencpy;	// add to global symbol list
 
 			token = strtok (NULL, " "); // next token
 
-			if (!isdigit(*token)){
+			if (!isdigit(*token)){	// check if input is an integer
 				cout << "not integer";
 				break;
 			}
-			symValue[j++] = atoi(token) + ModuleList->offset;	// add absolute address to symValue list
+			symValue[symbolIndex] = atoi(token) + ModuleList[ModuleIndex].offset;	// add module index to symbol relative address
+			
 			token = strtok (NULL, " ");
+			symbolIndex++;
+			localdefcount++;
 		}
 		
+		
 		// ERROR handling
-		if (i < defcount){
+		if (localdefcount < defcount){
 			printf("ERROR: Not enough symbols in declaration");
 			ERROR = true;
 		}
-		else if (i > defcount){
+		else if (localdefcount > defcount){
 		}
 		else{
 
 		}
 
-		//ModuleList[ModuleIndex].symbolList = (char **)malloc(sizeof(char*)*defcount);
-		//ModuleList[ModuleIndex].symbolValList = (int *)malloc(sizeof(int)*defcount);
-
-		//ModuleList[ModuleIndex].symbolList = symbol;
-		//ModuleList[ModuleIndex].symbolValList = symValue;
-		cout << "test" << ModuleIndex << endl;
-		//printf("%s ",symbol[0]);
-
 		ModuleIndex++;
-
-		free(symbol);
-		free(symValue);
+		
 		free(token);
 		free(xline);
-
+		
 		/*----------------------MODULE OFFSETS-----------------------------*/
 		/*
 		// convert string to C-string to make strcpy work
@@ -162,14 +145,24 @@ void firstPass(ifstream& infile) {
 
 
 
-
+		TEST++;
 	}
+
 	printf("\n");
 }
 
 int main() {
 	// initialize Module List
 	ModuleList = (ModuleS*)malloc(sizeof(ModuleS));
+	
+	symbol = (char **)malloc(sizeof(char*)*MAX_DEF);
+	int k;
+	for (k=0; k<MAX_DEF; k++){		// initilize c-string memory malloc for each symbol element
+		symbol[k] = (char *)malloc(sizeof(char)*10);
+		symbol[k] = "empty";
+	}
+	symValue = (int *)malloc(sizeof(int)*MAX_DEF);
+	
 
 	cout << "Enter file name: ";
 	char filename[50];
@@ -189,15 +182,13 @@ int main() {
 
 	cout << "----------------------------------"<<endl;
 	
-	cout << "hi" <<endl;
-	//cout << ModuleList[0].symbolList[0];
-	/*
+	printf("SYMBOL TABLE: \n");
+	
 	int i;
-	for (i=0; i<ModuleCount; i++){
-		printf("%s: %d ",ModuleList->symbolList[i], ModuleList->symbolValList[i]);
-
+	for (i=0; i<symbolIndex; i++){
+		printf("%s: %d \n",symbol[i], symValue[i]);
 	}
-	*/
+	
 
 	infile.close();
 	system("pause");
