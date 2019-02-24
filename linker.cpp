@@ -20,19 +20,6 @@ struct Modules *ModuleList;
 
 
 
-void __parseerror(int errcode) {
- static char* errstr[] = {
- "NUM_EXPECTED", // Number expect
- "SYM_EXPECTED", // Symbol Expected
- "ADDR_EXPECTED", // Addressing Expected which is A/E/I/R
- "SYM_TOO_LONG", // Symbol Name is too long
- "TOO_MANY_DEF_IN_MODULE", // > 16
- "TOO_MANY_USE_IN_MODULE", // > 16
- "TOO_MANY_INSTR", // total num_instr exceeds memory size (512)
- };
- //printf("Parse Error line %d offset %d: %s\n", linenum, lineoffset, errstr[errcode]);
-}
-
 
 void firstPass(ifstream& infile) {
 	cout << "firstPass" << endl;
@@ -67,9 +54,11 @@ void firstPass(ifstream& infile) {
 		symbol = (char **)malloc(sizeof(char*)*defcount);
 		int k;
 		
+		
 		for (k=0; k<defcount; k++){		// initilize c-string memory malloc for each symbol element
 			symbol[k] = (char *)malloc(sizeof(char)*10);
 		}
+		
 		
 		int *symValue;	// initilize dynamic array of symbol values
 		symValue = (int *)malloc(sizeof(int)*defcount);
@@ -81,7 +70,6 @@ void firstPass(ifstream& infile) {
 			char *tokencpy = " ";
 
 			tokencpy = strdup(token); // make a copy of the string
-			printf("%s ",tokencpy);
 			//strcat(tokencpy, "\0");
 			
 			symbol[i++] = tokencpy;	// add to symbol list
@@ -110,8 +98,8 @@ void firstPass(ifstream& infile) {
 
 		}
 
-		ModuleList[ModuleIndex].symbolList = (char **)malloc(sizeof(char*)*defcount);
-		ModuleList[ModuleIndex].symbolValList = (int *)malloc(sizeof(int)*defcount);
+		//ModuleList[ModuleIndex].symbolList = (char **)malloc(sizeof(char*)*defcount);
+		//ModuleList[ModuleIndex].symbolValList = (int *)malloc(sizeof(int)*defcount);
 
 		//ModuleList[ModuleIndex].symbolList = symbol;
 		//ModuleList[ModuleIndex].symbolValList = symValue;
