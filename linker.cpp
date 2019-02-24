@@ -67,7 +67,7 @@ void firstPass(ifstream& infile) {
 		int j = 0;
 		while (token != NULL){
 			//printf ("%s ",token);
-			char *tokencpy = " ";
+			char *tokencpy;
 
 			tokencpy = strdup(token); // make a copy of the string
 			//strcat(tokencpy, "\0");
