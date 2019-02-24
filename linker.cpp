@@ -81,6 +81,7 @@ void firstPass(ifstream& infile) {
 			char *tokencpy = " ";
 
 			tokencpy = strdup(token); // make a copy of the string
+			printf("%s ",tokencpy);
 			//strcat(tokencpy, "\0");
 			
 			symbol[i++] = tokencpy;	// add to symbol list
