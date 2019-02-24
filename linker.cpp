@@ -18,6 +18,8 @@ typedef struct Modules{
 	int offset;
 	char **symbolList;
 	int * symbolValList;
+	char *typeList;
+	int *opNum;
 
 } ModuleS;
 struct Modules *ModuleList; // declare Module to be initialized in main()
@@ -40,7 +42,7 @@ void firstPass(ifstream& infile) {
 		int charoffset = 0;	// ERROR, track char offset
 
 		ModuleList[ModuleIndex].offset = globalOffset;	// set module offset to current global offset
-
+		cout << "Module "<< ModuleIndex <<endl;
 	
 		/*--------------------HANDLE DEFINITIONS------------------------*/
 		
@@ -52,7 +54,7 @@ void firstPass(ifstream& infile) {
 		char *token;
 
 		token = strtok(xline, " ");
-		printf("%s ", token);	// read the first char of the line
+		//printf("%s ", token);	// read the first char of the line
 		int defcount = atoi(token);	// convert first token to definition count
 
 		token = strtok (NULL, " ");
@@ -61,7 +63,7 @@ void firstPass(ifstream& infile) {
 		
 		int localdefcount=0;
 		while (token != NULL){
-			printf (" inloop: %s ",token);
+			//printf (" inloop: %s ",token);
 			char *tokencpy;
 			tokencpy = strdup(token); // make a copy of the string
 			symbol[symbolIndex] = tokencpy;	// add to global symbol list
@@ -82,7 +84,7 @@ void firstPass(ifstream& infile) {
 		
 		// ERROR handling
 		if (localdefcount < defcount){
-			printf("ERROR: Not enough symbols in declaration");
+			printf("ERROR: Not enough symbols in declaration\n");
 			ERROR = true;
 		}
 		else if (localdefcount > defcount){
@@ -95,9 +97,11 @@ void firstPass(ifstream& infile) {
 		
 		free(token);
 		free(xline);
+
+
 		
 		/*----------------------MODULE OFFSETS-----------------------------*/
-		/*
+		
 		// convert string to C-string to make strcpy work
 		
 		char *xline3 = new char[line3.length() + 1];
@@ -112,33 +116,53 @@ void firstPass(ifstream& infile) {
 		
 		token3 = strtok (NULL, " ");
 
-		char **operand;	// create temporary list to store symbols. ** for pointer to array of char (i.e.) string
-		operand = (char **)malloc(sizeof(char*)*instructcount);
+		char *type;	// create temporary list to store symbols. ** for pointer to array of char (i.e.) string
+		type = (char *)malloc(sizeof(char)*instructcount);
+		/*
+		int k=0;
+		for (k=0;k<instructcount; k++){
+			operand[k] = (char*)malloc(sizeof(char)*1);
+		}
+		*/
 		int *opNum;
 		opNum = (int *)malloc(sizeof(int)*instructcount);
 		
-		i=0;
-		j=0;
-		int localOffset = 0;	// keep track of local offset in each module. To be used in module offset
+		int i=0;
+		int j=0;
 		while (token3 != NULL){
-			char *tokencpy = " ";
+			char *tokencpy;
 			tokencpy = strdup(token3);
-			operand[i++] = tokencpy;
+
+			printf("%c ", tokencpy[0]);
+
+			if (isalpha(tokencpy[0]) && strlen(tokencpy) == 1){		//check if type is correct format
+				type[i++] = tokencpy[0];
+			}
+			else{
+				printf( "ERROR - wrong operand\n");
+				ERROR = true;
+			}
 
 			token3 = strtok (NULL, " ");
+			printf(" %s ", token3);
 
-			if (!isdigit(*token3)){
-				cout << "not integer";
+			if (strlen(token3) != 4){
+				cout << "incorrect intruction";
 				break;
 			}
 			opNum[j++] = atoi(token3);	// add to opNum list
 
 			token3 = strtok (NULL, " ");
-			localOffset++;
-		}
-		globalOffset = localOffset;	// set global offset to total local offset
 
-		*/
+		}
+
+		ModuleList[ModuleIndex].typeList = type;
+		ModuleList[ModuleIndex].opNum = opNum;
+		ModuleIndex++;
+
+		free(type);
+		free(opNum);
+
 		
 		cout << endl;
 
