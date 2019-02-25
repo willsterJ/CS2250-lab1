@@ -2,6 +2,7 @@
 #include <fstream>
 #include <string>
 #include <cstring>
+#include <vector>
 
 using namespace std;
 
@@ -14,17 +15,57 @@ int ModuleIndex = 0;
 int symbolIndex = 0;
 int globalOffset = 0;
 
+class Symbols{
+public:
+	char *symbol;
+	int addr;
+
+	Symbols(){
+		symbol = "";
+		addr = 0;
+	}
+	Symbols(char* insymbol, int* inaddr){
+		symbol = insymbol;
+		addr = *inaddr;
+	}
+};
+
+class Instructions{
+public:
+	char instr;
+	int opcode;
+	Instructions(){
+		instr = ' ';
+		opcode = 0;
+	}
+};
+
+class Modules{
+public:
+	static int ModuleCount;
+	int offset;
+	vector<Symbols> symbols;
+	vector<Instructions> instructions;
+
+	Modules(){
+		offset = 0;
+	}
+};
+int Modules::ModuleCount = 0;
+/*
 typedef struct Modules{
 	int offset;
-	char **symbolList;
-	int * symbolValList;
+	Symbols *symbols;
+	Instructions *instructions;
 	char *typeList;
 	int *opNum;
 
 } ModuleS;
-struct Modules *ModuleList; // declare Module to be initialized in main()
-char **symbol;	// create  list to store symbols. ** for pointer to array of char (i.e.) string
-int *symValue;	// initilize dynamic array of symbol values
+*/
+//struct Modules *ModuleList; // declare Module to be initialized in main()
+
+vector<Symbols> globalSymbol;	// create blobal dynamic list of symbols;
+vector<Modules> ModuleList;
 
 
 
@@ -41,10 +82,15 @@ void firstPass(ifstream& infile) {
 		getline(infile, line3); // program text
 		int charoffset = 0;	// ERROR, track char offset
 
-		ModuleList[ModuleIndex].offset = globalOffset;	// set module offset to current global offset
-		cout << "Module "<< ModuleIndex <<endl;
+		//ModuleList[ModuleIndex].offset = globalOffset;	// set module offset to current global offset
+		Modules localModule;
+		localModule.offset = globalOffset;
+		ModuleList.push_back(localModule);
+
+		cout << "Module "<< Modules::ModuleCount <<endl;
 	
 		/*--------------------HANDLE DEFINITIONS------------------------*/
+		
 		
 		// convert string to C-string to make strcpy work
 		char *xline = new char[line1.length() + 1];
@@ -62,24 +108,34 @@ void firstPass(ifstream& infile) {
 		//printf ("token: %s ",token);
 		
 		int localdefcount=0;
+		
+		
 		while (token != NULL){
 			//printf (" inloop: %s ",token);
+
+			Symbols localSymb;
+
 			char *tokencpy;
 			tokencpy = strdup(token); // make a copy of the string
-			symbol[symbolIndex] = tokencpy;	// add to global symbol list
-
+			localSymb.symbol = tokencpy;
+			
 			token = strtok (NULL, " "); // next token
 
 			if (!isdigit(*token)){	// check if input is an integer
 				cout << "not integer";
 				break;
 			}
-			symValue[symbolIndex] = atoi(token) + ModuleList[ModuleIndex].offset;	// add module index to symbol relative address
-			
+
+			//localSymb.addr = atoi(token) + ModuleList[ModuleIndex].offset;	// add module index to symbol relative address
+
 			token = strtok (NULL, " ");
+
+			globalSymbol.push_back(localSymb);	// push symbol on global list
+
 			symbolIndex++;
 			localdefcount++;
 		}
+		
 		
 		
 		// ERROR handling
@@ -92,15 +148,14 @@ void firstPass(ifstream& infile) {
 		else{
 
 		}
-
-		ModuleIndex++;
 		
 		free(token);
 		free(xline);
 
-
+		
 		
 		/*----------------------MODULE OFFSETS-----------------------------*/
+		
 		
 		// convert string to C-string to make strcpy work
 		
@@ -116,27 +171,27 @@ void firstPass(ifstream& infile) {
 		
 		token3 = strtok (NULL, " ");
 
+		/*
 		char *type;	// create temporary list to store symbols. ** for pointer to array of char (i.e.) string
 		type = (char *)malloc(sizeof(char)*instructcount);
-		/*
-		int k=0;
-		for (k=0;k<instructcount; k++){
-			operand[k] = (char*)malloc(sizeof(char)*1);
-		}
-		*/
+	
 		int *opNum;
 		opNum = (int *)malloc(sizeof(int)*instructcount);
+		*/
 		
 		int i=0;
 		int j=0;
 		while (token3 != NULL){
+			Instructions localInstr;
+
 			char *tokencpy;
 			tokencpy = strdup(token3);
 
 			printf("%c ", tokencpy[0]);
 
 			if (isalpha(tokencpy[0]) && strlen(tokencpy) == 1){		//check if type is correct format
-				type[i++] = tokencpy[0];
+				//type[i++] = tokencpy[0];
+				localInstr.instr = tokencpy[0];
 			}
 			else{
 				printf( "ERROR - wrong operand\n");
@@ -150,23 +205,32 @@ void firstPass(ifstream& infile) {
 				cout << "incorrect intruction";
 				break;
 			}
-			opNum[j++] = atoi(token3);	// add to opNum list
+			//opNum[j++] = atoi(token3);	// add to opNum list
+			localInstr.opcode = atoi(token3);
 
 			token3 = strtok (NULL, " ");
 
+			
+			localModule.instructions.push_back(localInstr);	// append local instruct to localModule
+
 		}
-
-		ModuleList[ModuleIndex].typeList = type;
-		ModuleList[ModuleIndex].opNum = opNum;
-		ModuleIndex++;
-
-		free(type);
-		free(opNum);
+		globalOffset += instructcount;
 
 		
+		//ModuleList[ModuleIndex].offset = globalOffset;
+		ModuleList.at(Modules::ModuleCount).offset = globalOffset;
+		
+		//ModuleList[ModuleIndex].typeList = type;
+		//ModuleList[ModuleIndex].opNum = opNum;
+		//ModuleList[ModuleIndex]
+
+		Modules::ModuleCount ++;
+
+		free(token3);
+		free(xline3);
+		
+		
 		cout << endl;
-
-
 
 
 		TEST++;
@@ -177,22 +241,13 @@ void firstPass(ifstream& infile) {
 
 int main() {
 	// initialize Module List
-	ModuleList = (ModuleS*)malloc(sizeof(ModuleS));
-	
-	symbol = (char **)malloc(sizeof(char*)*MAX_DEF);
-	int k;
-	for (k=0; k<MAX_DEF; k++){		// initilize c-string memory malloc for each symbol element
-		symbol[k] = (char *)malloc(sizeof(char)*10);
-		symbol[k] = "empty";
-	}
-	symValue = (int *)malloc(sizeof(int)*MAX_DEF);
-	
+	//ModuleList = (ModuleS*)malloc(sizeof(ModuleS));
 
 	cout << "Enter file name: ";
 	char filename[50];
 	ifstream infile;
 	//cin.getline(filename,50);
-	infile.open("input.txt");		// change input to infile
+	infile.open("input.txt");		// change param to infile
 
 	if (infile.is_open()) {
 		cout << "yes" << endl;
@@ -209,10 +264,17 @@ int main() {
 	printf("SYMBOL TABLE: \n");
 	
 	int i;
-	for (i=0; i<symbolIndex; i++){
-		printf("%s: %d \n",symbol[i], symValue[i]);
+
+	for (i=0; i<globalSymbol.size(); i++){
+		//printf("%s: %d \n",symbol[i], symValue[i]);
+		printf("%s: %d \n", globalSymbol.at(i).symbol, globalSymbol.at(i).addr);
 	}
-	
+
+	/*
+	for (i=0; i<ModuleList.size(); i++){
+		printf("%c ", ModuleList.at(i).);
+	}
+	*/
 
 	infile.close();
 	system("pause");
